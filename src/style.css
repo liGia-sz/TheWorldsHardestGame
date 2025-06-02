@@ -1,0 +1,51 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+.game-container {
+    position: relative;
+    width: 800px; /* Largura da área de jogo */
+    height: 600px; /* Altura da área de jogo */
+    border: 2px solid #000; /* Borda da área de jogo */
+    background-color: #f0f0f0; /* Cor de fundo da área de jogo */
+    overflow: hidden; /* Esconde elementos que saem da área de jogo */
+}
+
+.player {
+    position: absolute;
+    width: 30px; /* Largura do jogador */
+    height: 30px; /* Altura do jogador */
+    background-color: #ff0000; /* Cor do jogador */
+}
+
+.obstacle {
+    position: absolute;
+    background-color: #0000ff; /* Cor dos obstáculos */
+}
+
+.level-complete {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 255, 0, 0.5); /* Cor de fundo para nível completo */
+    display: none; /* Inicialmente escondido */
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    color: #fff;
+}
+
+.hidden {
+    display: none; /* Classe para esconder elementos */
+}
+
+.goal {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background-color: gold;
+    border-radius: 50%;
+}
