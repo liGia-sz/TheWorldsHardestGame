@@ -8,6 +8,8 @@ let obstacles = [];
 let levelData;
 let currentLevel = 0;
 let gameOver = false;
+let score = 0;
+let totalStars = 0;
 
 const playerSpeed = 7; // Tente aumentar para 8 ou 10 para mais velocidade
 let keys = {};
@@ -29,39 +31,46 @@ function init() {
 
 function loadLevel(levelIndex) {
     levelData = levels[levelIndex];
-    // Não precisa mais de obstacles, use platforms direto no drawPlatforms
     player.x = levelData.playerStart.x;
     player.y = levelData.playerStart.y;
+    score = 0;
+    totalStars = levelData.stars.length;
+    levelData.stars.forEach(star => star.collected = false);
+    levelData.goal.revealed = false;
 }
 
 function updatePlayer() {
-    if (keys['ArrowUp'])    player.y -= player.speed;
-    if (keys['ArrowDown'])  player.y += player.speed;
-    if (keys['ArrowLeft'])  player.x -= player.speed;
-    if (keys['ArrowRight']) player.x += player.speed;
+    let nextX = player.x;
+    let nextY = player.y;
+
+    if (keys['ArrowUp'])    nextY -= player.speed;
+    if (keys['ArrowDown'])  nextY += player.speed;
+    if (keys['ArrowLeft'])  nextX -= player.speed;
+    if (keys['ArrowRight']) nextX += player.speed;
 
     // Limitar o player dentro do canvas
-    player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
-    player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+    nextX = Math.max(0, Math.min(canvas.width - player.width, nextX));
+    nextY = Math.max(0, Math.min(canvas.height - player.height, nextY));
 
-    // Impedir que o player atravesse por baixo das plataformas (safespaces)
+    // Impedir atravessar paredes (type: 'wall')
+    let collision = false;
     levelData.platforms.forEach(p => {
-        // Verifica colisão apenas se o player estiver subindo para dentro da plataforma
-        if (
-            player.x < p.x + p.width &&
-            player.x + player.width > p.x &&
-            player.y < p.y + p.height &&
-            player.y + player.height > p.y
-        ) {
-            // Se o player está vindo de baixo, reposiciona ele para cima da plataforma
-            if (player.y + player.height - player.speed <= p.y) {
-                player.y = p.y - player.height;
-            } else if (player.y - player.speed >= p.y + p.height) {
-                // Se está vindo de cima, permite descer
-                player.y = p.y + p.height;
+        if (p.type === 'wall') {
+            if (
+                nextX < p.x + p.width &&
+                nextX + player.width > p.x &&
+                nextY < p.y + p.height &&
+                nextY + player.height > p.y
+            ) {
+                collision = true;
             }
         }
     });
+
+    if (!collision) {
+        player.x = nextX;
+        player.y = nextY;
+    }
 
     checkCollision();
 }
@@ -116,6 +125,7 @@ function checkEnemyCollision() {
 
 // 3. Detectar chegada na meta
 function checkGoalCollision() {
+    if (!levelData.goal.revealed) return;
     const g = levelData.goal;
     const distX = (player.x + player.width / 2) - g.x;
     const distY = (player.y + player.height / 2) - g.y;
@@ -151,6 +161,24 @@ function checkCollision() {
     });
 }
 
+function checkStarCollision() {
+    levelData.stars.forEach(star => {
+        if (!star.collected) {
+            const distX = (player.x + player.width / 2) - star.x;
+            const distY = (player.y + player.height / 2) - star.y;
+            const distance = Math.sqrt(distX * distX + distY * distY);
+            if (distance < 20) {
+                star.collected = true;
+                score++;
+                // Revela a chegada se pegou todas as estrelas
+                if (score === totalStars) {
+                    levelData.goal.revealed = true;
+                }
+            }
+        }
+    });
+}
+
 function gameLoop() {
     if (gameOver) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -169,6 +197,11 @@ function gameLoop() {
     drawPlayer();
     checkEnemyCollision();
     checkGoalCollision();
+    checkStarCollision(); // Verifica colisão com estrelas
+
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    ctx.fillText(`Estrelas: ${score} / ${totalStars}`, 20, 30);
 
     requestAnimationFrame(gameLoop); // Garante o loop contínuo
 }
@@ -186,8 +219,12 @@ function drawObstacles() {
 }
 
 function drawPlatforms() {
-    ctx.fillStyle = 'cyan'; // Cor ciano para destacar os safespaces
     levelData.platforms.forEach(p => {
+        if (p.type === 'safe') {
+            ctx.fillStyle = 'cyan'; // Safespace
+        } else {
+            ctx.fillStyle = '#bbb'; // Cor de parede/corredor
+        }
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
 }
@@ -202,11 +239,13 @@ function drawEnemies() {
 }
 
 function drawGoal() {
-    ctx.fillStyle = 'gold';
-    const g = levelData.goal;
-    ctx.beginPath();
-    ctx.arc(g.x, g.y, g.width / 2, 0, Math.PI * 2);
-    ctx.fill();
+    if (levelData.goal.revealed) {
+        ctx.fillStyle = 'gold';
+        const g = levelData.goal;
+        ctx.beginPath();
+        ctx.arc(g.x, g.y, g.width / 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
 }
 
 init();
