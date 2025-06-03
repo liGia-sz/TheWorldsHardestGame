@@ -3,7 +3,7 @@
 ## Descrição
 "The World's Hardest Game" é um jogo desafiador onde o jogador deve navegar por uma série de níveis repletos de obstáculos. O objetivo é chegar ao final de cada nível sem colidir com os obstáculos em movimento.
 
-![alt text](image-1.png)
+![alt text](image.png)
 
 ## Estrutura do Projeto
 O projeto é organizado da seguinte forma:
