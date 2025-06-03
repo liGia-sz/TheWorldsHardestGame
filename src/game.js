@@ -125,7 +125,7 @@ function checkEnemyCollision() {
 
 // 3. Detectar chegada na meta
 function checkGoalCollision() {
-    if (!levelData.goal.revealed) return;
+    if (!levelData.goal.revealed) return; // Só permite passar se a chegada estiver revelada
     const g = levelData.goal;
     const distX = (player.x + player.width / 2) - g.x;
     const distY = (player.y + player.height / 2) - g.y;
@@ -183,27 +183,46 @@ function gameLoop() {
     if (gameOver) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'red';
-        ctx.font = '30px Arial';
-        ctx.fillText('Game Over', canvas.width / 2 - 70, canvas.height / 2);
+        ctx.font = 'bold 48px "Outfit", Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2);
+
+        // Desenha o botão
+        ctx.fillStyle = '#222';
+        ctx.fillRect(restartBtnRect.x, restartBtnRect.y, restartBtnRect.width, restartBtnRect.height);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(restartBtnRect.x, restartBtnRect.y, restartBtnRect.width, restartBtnRect.height);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 28px "Outfit", Arial, sans-serif';
+        ctx.fillText('Reiniciar', canvas.width / 2, restartBtnRect.y + 34);
+
+        showRestartButton = true;
+        ctx.textAlign = 'left'; // volta ao padrão
         return;
+    } else {
+        showRestartButton = false;
     }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    updatePlayer();      // <-- Adicione esta linha!
+    updatePlayer();
     updateEnemies();
     drawPlatforms();
     drawEnemies();
+    drawStars(); // <-- Adicione esta linha para desenhar as estrelas!
     drawGoal();
     drawPlayer();
     checkEnemyCollision();
     checkGoalCollision();
-    checkStarCollision(); // Verifica colisão com estrelas
+    checkStarCollision();
 
     ctx.fillStyle = 'black';
-    ctx.font = '20px Arial';
+    ctx.font = '20px "Outfit", Arial, sans-serif';
+    ctx.fillText(`Nível: ${currentLevel + 1} / ${levels.length}`, 20, 60); // Adiciona o contador de níveis
     ctx.fillText(`Estrelas: ${score} / ${totalStars}`, 20, 30);
 
-    requestAnimationFrame(gameLoop); // Garante o loop contínuo
+    requestAnimationFrame(gameLoop);
 }
 
 function drawPlayer() {
@@ -238,6 +257,20 @@ function drawEnemies() {
     });
 }
 
+function drawStars() {
+    levelData.stars.forEach(star => {
+        if (!star.collected) {
+            ctx.fillStyle = 'yellow';
+            ctx.beginPath();
+            ctx.arc(star.x, star.y, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'orange';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+    });
+}
+
 function drawGoal() {
     if (levelData.goal.revealed) {
         ctx.fillStyle = 'gold';
@@ -247,5 +280,48 @@ function drawGoal() {
         ctx.fill();
     }
 }
+
+let showRestartButton = false;
+const restartBtnRect = {
+    x: canvas.width / 2 - 100,
+    y: canvas.height / 2 + 30,
+    width: 200,
+    height: 50
+};
+
+const restartBtn = document.getElementById('restartBtn');
+restartBtn.onclick = function() {
+    currentLevel = 0;
+    loadLevel(currentLevel);
+    player.x = levels[currentLevel].playerStart.x;
+    player.y = levels[currentLevel].playerStart.y;
+    gameOver = false;
+    score = 0;
+    restartBtn.style.display = 'none';
+    requestAnimationFrame(gameLoop);
+};
+
+canvas.addEventListener('click', function(evt) {
+    if (showRestartButton) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = evt.clientX - rect.left;
+        const mouseY = evt.clientY - rect.top;
+        if (
+            mouseX >= restartBtnRect.x &&
+            mouseX <= restartBtnRect.x + restartBtnRect.width &&
+            mouseY >= restartBtnRect.y &&
+            mouseY <= restartBtnRect.y + restartBtnRect.height
+        ) {
+            currentLevel = 0;
+            loadLevel(currentLevel);
+            player.x = levels[currentLevel].playerStart.x;
+            player.y = levels[currentLevel].playerStart.y;
+            gameOver = false;
+            score = 0;
+            showRestartButton = false;
+            requestAnimationFrame(gameLoop);
+        }
+    }
+});
 
 init();
