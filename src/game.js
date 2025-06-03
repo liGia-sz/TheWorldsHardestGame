@@ -1,6 +1,3 @@
-// filepath: the-worlds-hardest-game/the-worlds-hardest-game/src/game.js
-// game.js
-
 import levels from './assets/levels.js';
 
 const canvas = document.getElementById('gameCanvas');
@@ -12,6 +9,9 @@ let levelData;
 let currentLevel = 0;
 let gameOver = false;
 
+const playerSpeed = 7; // Tente aumentar para 8 ou 10 para mais velocidade
+let keys = {};
+
 function init() {
     player = {
         x: 50,
@@ -19,10 +19,11 @@ function init() {
         width: 30,
         height: 30,
         speed: 5,
-        color: 'blue'
+        color: 'red' // ou 'lime'
     };
     loadLevel(currentLevel);
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', (e) => keys[e.key] = true);
+    document.addEventListener('keyup', (e) => keys[e.key] = false);
     requestAnimationFrame(gameLoop);
 }
 
@@ -33,16 +34,35 @@ function loadLevel(levelIndex) {
     player.y = levelData.playerStart.y;
 }
 
-function handleKeyDown(event) {
-    if (event.key === 'ArrowUp') {
-        player.y -= player.speed;
-    } else if (event.key === 'ArrowDown') {
-        player.y += player.speed;
-    } else if (event.key === 'ArrowLeft') {
-        player.x -= player.speed;
-    } else if (event.key === 'ArrowRight') {
-        player.x += player.speed;
-    }
+function updatePlayer() {
+    if (keys['ArrowUp'])    player.y -= player.speed;
+    if (keys['ArrowDown'])  player.y += player.speed;
+    if (keys['ArrowLeft'])  player.x -= player.speed;
+    if (keys['ArrowRight']) player.x += player.speed;
+
+    // Limitar o player dentro do canvas
+    player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+    player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+
+    // Impedir que o player atravesse por baixo das plataformas (safespaces)
+    levelData.platforms.forEach(p => {
+        // Verifica colisão apenas se o player estiver subindo para dentro da plataforma
+        if (
+            player.x < p.x + p.width &&
+            player.x + player.width > p.x &&
+            player.y < p.y + p.height &&
+            player.y + player.height > p.y
+        ) {
+            // Se o player está vindo de baixo, reposiciona ele para cima da plataforma
+            if (player.y + player.height - player.speed <= p.y) {
+                player.y = p.y - player.height;
+            } else if (player.y - player.speed >= p.y + p.height) {
+                // Se está vindo de cima, permite descer
+                player.y = p.y + p.height;
+            }
+        }
+    });
+
     checkCollision();
 }
 
@@ -59,6 +79,25 @@ function updateEnemies() {
         if (e.y - e.radius < 0 || e.y + e.radius > canvas.height) {
             e.dy *= -1;
         }
+
+        // Rebater nas plataformas (espaços seguros)
+        levelData.platforms.forEach(p => {
+            // Checa colisão circular-retangular
+            const closestX = Math.max(p.x, Math.min(e.x, p.x + p.width));
+            const closestY = Math.max(p.y, Math.min(e.y, p.y + p.height));
+            const distX = e.x - closestX;
+            const distY = e.y - closestY;
+            const distance = Math.sqrt(distX * distX + distY * distY);
+
+            if (distance < e.radius) {
+                // Rebater na horizontal ou vertical dependendo do lado mais próximo
+                if (Math.abs(distX) > Math.abs(distY)) {
+                    e.dx *= -1;
+                } else {
+                    e.dy *= -1;
+                }
+            }
+        });
     });
 }
 
@@ -122,15 +161,16 @@ function gameLoop() {
     }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    updateEnemies(); // <-- Atualiza inimigos
-    drawPlayer();
-    drawObstacles();
+    updatePlayer();      // <-- Adicione esta linha!
+    updateEnemies();
     drawPlatforms();
     drawEnemies();
     drawGoal();
-    checkEnemyCollision(); // <-- Checa colisão com inimigos
-    checkGoalCollision();  // <-- Checa chegada na meta
-    requestAnimationFrame(gameLoop);
+    drawPlayer();
+    checkEnemyCollision();
+    checkGoalCollision();
+
+    requestAnimationFrame(gameLoop); // Garante o loop contínuo
 }
 
 function drawPlayer() {
@@ -146,7 +186,7 @@ function drawObstacles() {
 }
 
 function drawPlatforms() {
-    ctx.fillStyle = 'gray';
+    ctx.fillStyle = 'cyan'; // Cor ciano para destacar os safespaces
     levelData.platforms.forEach(p => {
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
