@@ -1,6 +1,6 @@
 # The World's Hardest Game
 
-## Descrição
+## 👾 Descrição
 "The World's Hardest Game" é um jogo desafiador onde o jogador deve navegar por uma série de níveis repletos de obstáculos. Colete todas as estrelas (pontos amarelos), e chegue ao final de cada nível sem colidir com os obstáculos em movimento.
 
 ![alt text](image.png)
